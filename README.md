@@ -23,7 +23,7 @@ Pkg.clone("https://github.com/seung-lab/CloudVolume.jl")
 Note that indexing is inclusive, like Julia.
 ```
 using CloudVolume
-vol = CloudVolumeWrapper("path location to precomputed files")
+vol = CloudVolumeWrapper("path to precomputed files")
 img = vol[1000:1100, 2000:2100, 100:200]  # download images
 vol[1000:1100, 2000:2100, 100:200] = img  # upload images
 ```
