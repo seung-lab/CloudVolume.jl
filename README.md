@@ -28,7 +28,7 @@ img = vol[1000:1100, 2000:2100, 100:200]  # download images
 vol[1000:1100, 2000:2100, 100:200] = img  # upload images
 ```
 
-Note that uploaded data must be chunk-aligned. For more details, see the cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
+Note that uploaded data must be chunk-aligned. For more details, see the [cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
 
 ## Credits
 Thanks to @jonathanzung for an earlier version of this wrapper.
