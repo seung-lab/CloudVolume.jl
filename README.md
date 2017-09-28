@@ -9,7 +9,7 @@
 Julia wrapper for cloud-volume from Python.
 
 ## Installation  
-Install cloud-volume, following the steps in [its documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
+Install cloud-volume, following the steps in its [documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
 
 Within Julia, clone this package,
 ```
