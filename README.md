@@ -27,5 +27,11 @@ vol[1000:1100, 2000:2100, 100:200] = img  # upload images
 
 Note that uploaded data must be chunk-aligned. For more details, see the [cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
 
+## Troubleshotting  
+If you installed the CloudVolume's Python package inside a virtualenv, you many need to rebuild `PyCall` to use that virtualenv.
+1. Activate the virtualenv you created.
+1. Open Julia.
+1. Run `rm(Pkg.dir("PyCall","deps","PYTHON")); Pkg.build("PyCall")`
+
 ## Credits
 Thanks to @jonathanzung for an earlier version of this wrapper.
