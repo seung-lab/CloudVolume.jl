@@ -20,12 +20,24 @@ Pkg.clone("https://github.com/seung-lab/CloudVolume.jl")
 Note that indexing is inclusive, like Julia.
 ```
 using CloudVolume
-vol = CloudVolumeWrapper("path to precomputed files")
+# CloudVolume object
+vol = CloudVolumeWrapper("<path to precomputed files>")
 img = vol[1000:1100, 2000:2100, 100:200]  # download images
 vol[1000:1100, 2000:2100, 100:200] = img  # upload images
+# Storage object
+s = StorageWrapper("<path to precomputed files>")
+s["filename"] = "content"
+@assert s["filename"] == "content"
+delete!(s, "filename")
 ```
 
-Note that uploaded data must be chunk-aligned. For more details, see the [cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
+Note that uploaded CloudVolume data must be chunk-aligned. For more details, see the [cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
+
+## Troubleshotting  
+If you installed the CloudVolume Python package inside a virtualenv, you many need to rebuild `PyCall` to use that virtualenv.
+1. Activate the virtualenv you created.
+1. Open Julia.
+1. Run `rm(Pkg.dir("PyCall","deps","PYTHON")); Pkg.build("PyCall")`
 
 ## Credits
 Thanks to @jonathanzung for an earlier version of this wrapper.
