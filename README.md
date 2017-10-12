@@ -27,7 +27,7 @@ vol[1000:1100, 2000:2100, 100:200] = img  # upload images
 # Storage object
 s = StorageWrapper("<path to precomputed files>")
 s["filename"] = "content"
-@assert s["filename"] == "content"
+s["filename"] == "content" # returns true
 delete!(s, "filename")
 ```
 
