@@ -21,11 +21,11 @@ Note that indexing is inclusive, like Julia.
 ```
 using CloudVolume
 # CloudVolume object
-vol = CloudVolumeWrapper("<path to precomputed files>")
+vol = CloudVolumeWrapper("<path to precomputed file directory>")
 img = vol[1000:1100, 2000:2100, 100:200]  # download images
 vol[1000:1100, 2000:2100, 100:200] = img  # upload images
 # Storage object
-s = StorageWrapper("<path to precomputed files>")
+s = StorageWrapper("<path to storage directory>")
 s["filename"] = "content"
 s["filename"] == "content" # returns true
 delete!(s, "filename")
