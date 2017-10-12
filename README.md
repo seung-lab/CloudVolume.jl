@@ -39,5 +39,11 @@ If you installed the CloudVolume Python package inside a virtualenv, you many ne
 1. Open Julia.
 1. Run `rm(Pkg.dir("PyCall","deps","PYTHON")); Pkg.build("PyCall")`
 
+## Troubleshotting  
+If you installed the CloudVolume Python package inside a virtualenv, you many need to rebuild `PyCall` to use that virtualenv.
+1. Activate the virtualenv you created.
+1. Open Julia.
+1. Run `rm(Pkg.dir("PyCall","deps","PYTHON")); Pkg.build("PyCall")`
+
 ## Credits
 Thanks to @jonathanzung for an earlier version of this wrapper.
