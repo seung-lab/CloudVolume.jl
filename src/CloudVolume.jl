@@ -90,11 +90,14 @@ immutable StorageWrapper
 end
 
 function Base.getindex(x::StorageWrapper, filename)
-    return x.val[:get_file](filename)
+    d = x.val[:get_file](filename)
+    return deserialize(IOBuffer(d))
 end
 
 function Base.setindex!(x::StorageWrapper, content, filename)
-    x.val[:put_file](filename, content)
+    b = IOBuffer()
+    serialize(b, content)
+    x.val[:put_file](filename, pybytes(take!(b)))
     x.val[:wait]()    
 end
 
