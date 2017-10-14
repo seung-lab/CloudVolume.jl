@@ -34,13 +34,17 @@ CachedStorage = cached(cv.Storage)
 
 immutable CloudVolumeWrapper
 	val
-	function CloudVolumeWrapper(storage_string, scale_idx=0,
+	function CloudVolumeWrapper(storage_string; mip=0,
 						bounded=true,
 						fill_missing=false,
+                        cache=false,
+                        progress=false,
 						info=nothing)
-		return new(CachedVolume(storage_string, scale_idx, 
+		return new(CachedVolume(storage_string, mip, 
 						bounded, 
-						fill_missing, 
+						fill_missing,
+                        cache,
+                        progress,
 						info))
 	end
 end
