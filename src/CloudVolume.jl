@@ -22,8 +22,6 @@ function cached(f)
 	function my_f(args...)
 		if !haskey(cache, args)
 			cache[args] = f(args...)
-		else
-			println("restoring from cache")
 		end
 		return cache[args]
 	end
@@ -55,6 +53,14 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
             (pyslice(slicex.start,slicex.stop+1),
             pyslice(slicey.start,slicey.stop+1),
             pyslice(slicez.start,slicez.stop+1))),4)
+end
+
+function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
+                                        slicey::UnitRange, z::Int64)
+    return squeeze(get(x.val, 
+            (pyslice(slicex.start,slicex.stop+1),
+            pyslice(slicey.start,slicey.stop+1),
+            z)),(3,4))
 end
 
 function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange, 
