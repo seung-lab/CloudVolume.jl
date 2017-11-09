@@ -1,6 +1,8 @@
 using CloudVolume
 using Base.Test
 
+include("storage.jl")
+
 @testset "test 3D image reading and saving" begin  
     path = "gs://seunglab/jpwu/test/image/"
     vol = CloudVolumeWrapper(path)
