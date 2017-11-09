@@ -6,4 +6,5 @@ function test_storage()
     s["a"] = "b"
     @assert s["a"] == "b"
     delete!(s, "a")
+    return true
 end

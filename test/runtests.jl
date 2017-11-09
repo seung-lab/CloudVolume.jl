@@ -1,5 +1,5 @@
 using CloudVolume
 using Base.Test
 
-# write your own tests here
-@test 1 == 2
+include("cloudvolume.jl")
+@test test_storage();
