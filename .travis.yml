@@ -10,8 +10,8 @@ notifications:
 
 install:
     - sudo apt-get install -y -qq python-pip
-    - pip install --upgrade pip
-    - pip install google protobuf
+    - sudo pip install --upgrade pip
+    - sudo pip install google protobuf
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
