@@ -1,2 +1,2 @@
-julia 0.5
-PyCall 1.6.2
+julia 0.6
+PyCall 

@@ -30,45 +30,65 @@ end
 CachedVolume = cached(cv.CloudVolume)
 CachedStorage = cached(cv.Storage)
 
-immutable CloudVolumeWrapper
+struct CloudVolumeWrapper 
 	val
+    is1based:: Bool
 	function CloudVolumeWrapper(storage_string; mip=0,
 						bounded=true,
 						fill_missing=false,
                         cache=false,
                         progress=false,
-						info=nothing)
+						info=nothing,
+                       is1based=false)
 		return new(CachedVolume(storage_string, mip, 
 						bounded, 
 						fill_missing,
                         cache,
                         progress,
-						info))
+						info), is1based)
 	end
 end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
                                         slicey::UnitRange, slicez::UnitRange)
-    return squeeze(get(x.val, 
-            (pyslice(slicex.start,slicex.stop+1),
-            pyslice(slicey.start,slicey.stop+1),
-            pyslice(slicez.start,slicez.stop+1))),4)
+    t = time()
+    if x.is1based
+        ret = get(x.val, (  pyslice(slicex.start-1, slicex.stop),
+                            pyslice(slicey.start-1, slicey.stop),
+                            pyslice(slicez.start-1, slicez.stop)))
+    else 
+        ret = get(x.val, (  pyslice(slicex.start, slicex.stop+1),
+                            pyslice(slicey.start, slicey.stop+1),
+                            pyslice(slicez.start, slicez.stop+1)))
+    end 
+    if size(ret, 4) == 1
+        ret = squeeze(ret, 4)
+    end 
+    
+    speed = sizeof(ret) / (time()-t) / 1000000 
+    println("cutout speed: $(speed) MB/s")
+    return ret
 end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
                                         slicey::UnitRange, z::Int64)
-    return squeeze(get(x.val, 
-            (pyslice(slicex.start,slicex.stop+1),
-            pyslice(slicey.start,slicey.stop+1),
-            z)),(3,4))
+    arr = get(x.val, (  pyslice(slicex.start,slicex.stop+1),
+                        pyslice(slicey.start,slicey.stop+1), z))
+    arr = squeeze(arr, (3,4))
+    return arr 
 end
 
 function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange, 
                                         slicey::UnitRange, slicez::UnitRange)
-    x.val[:__setitem__]((pyslice(slicex.start,slicex.stop+1),
-                            pyslice(slicey.start,slicey.stop+1),
-                            pyslice(slicez.start,slicez.stop+1)), 
-                            img)
+    if x.is1based 
+        x.val[:__setitem__]((   pyslice(slicex.start-1, slicex.stop),
+                                pyslice(slicey.start-1, slicey.stop),
+                                pyslice(slicez.start-1, slicez.stop)), img)
+    else 
+        x.val[:__setitem__]((   pyslice(slicex.start, slicex.stop+1),
+                                pyslice(slicey.start, slicey.stop+1),
+                                pyslice(slicez.start, slicez.stop+1)), img)
+    end 
 end
 
 function Base.size(x::CloudVolumeWrapper)
@@ -92,7 +112,7 @@ function resolution(x::CloudVolumeWrapper)
 end
 
 
-immutable StorageWrapper
+struct StorageWrapper
     val
     function StorageWrapper(storage_string)
         return new(CachedStorage(storage_string))

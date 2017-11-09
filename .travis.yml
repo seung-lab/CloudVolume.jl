@@ -2,12 +2,16 @@
 language: julia
 os:
   - linux
-  - osx
 julia:
   - release
   - nightly
 notifications:
   email: false
+
+install:
+    - sudo apt-get install -y -qq python-pip
+    - sudo pip install --upgrade pip
+    - sudo pip install google protobuf cloud-volume
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
