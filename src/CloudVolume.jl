@@ -92,6 +92,10 @@ function resolution(x::CloudVolumeWrapper)
     return x.val[:resolution]
 end
 
+function flush(x::CloudVolumeWrapper)
+    return x.val[:flush_cache]()
+end
+
 
 immutable StorageWrapper
     val
