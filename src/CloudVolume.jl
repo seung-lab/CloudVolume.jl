@@ -10,7 +10,8 @@ export
     offset,
     scale,
     chunks,
-    resolution
+    resolution,
+    exists
 
 
 using PyCall
@@ -114,6 +115,10 @@ end
 function Base.delete!(x::StorageWrapper, filename)
     x.val[:delete_file](filename)
     x.val[:wait]()    
+end
+
+function exists(x::StorageWrapper, filename)
+    return x.val[:exists](filename)
 end
 
 end # module CloudVolume
