@@ -11,7 +11,8 @@ export
     scale,
     chunks,
     resolution,
-    exists
+    exists,
+    flush
 
 
 using PyCall
@@ -92,7 +93,7 @@ function resolution(x::CloudVolumeWrapper)
     return x.val[:resolution]
 end
 
-function flush(x::CloudVolumeWrapper)
+function Base.flush(x::CloudVolumeWrapper)
     return x.val[:flush_cache]()
 end
 
