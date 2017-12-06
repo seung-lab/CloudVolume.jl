@@ -38,14 +38,18 @@ immutable CloudVolumeWrapper
 						bounded=true,
 						fill_missing=false,
                         cache=false,
+                        cdn_cache=false,
                         progress=false,
-						info=nothing)
+						info=nothing,
+                        provenance=nothing)
 		return new(CachedVolume(storage_string, mip, 
 						bounded, 
 						fill_missing,
                         cache,
+                        cdn_cache,
                         progress,
-						info))
+						info,
+                        provenance))
 	end
 end
 
@@ -97,6 +101,13 @@ function Base.flush(x::CloudVolumeWrapper)
     return x.val[:flush_cache]()
 end
 
+function Base.info(x::CloudVolumeWrapper)
+    return x.val[:info]
+end
+
+function provenance(x::CloudVolumeWrapper)
+    return x.val[:provenance]
+end
 
 immutable StorageWrapper
     val
