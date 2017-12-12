@@ -116,9 +116,20 @@ immutable StorageWrapper
     end
 end
 
-function Base.getindex(x::StorageWrapper, filename)
+function Base.getindex(x::StorageWrapper, filename::String)
     d = x.val[:get_file](filename)
     return deserialize(IOBuffer(d))
+end
+
+function Base.getindex(x::StorageWrapper, filenames::Array{String,1})
+    results = x.val[:get_files](filenames)
+    empties = filter(x->x["content"]==nothing, results)
+    errors = filter(x->x["error"]!=nothing, results)
+    filter!(x->(x["error"]==nothing) & (x["content"]!=nothing), results)
+    for r in results
+        r["content"] = deserialize(IOBuffer(r["content"]))
+    end
+    return results, empties, errors
 end
 
 function Base.setindex!(x::StorageWrapper, content, filename)
