@@ -29,7 +29,7 @@ function cached(f)
 	end
 end
 
-CachedVolume = cached(cv.CloudVolume)
+CachedVolume = cached(cv.CloudVolumeGSUtil)
 CachedStorage = cached(cv.Storage)
 
 immutable CloudVolumeWrapper
