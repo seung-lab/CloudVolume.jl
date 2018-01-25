@@ -63,10 +63,21 @@ end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
                                         slicey::UnitRange, z::Int64)
-    return squeeze(get(x.val, 
-            (pyslice(slicex.start,slicex.stop+1),
-            pyslice(slicey.start,slicey.stop+1),
-            z)),(3,4))
+	slices = (pyslice(slicex.start,slicex.stop+1),
+             pyslice(slicey.start,slicey.stop+1),
+             z)
+
+	println("Getting data references...")
+	@time py_data = pycall(x.val[:__getitem__], PyArray, slices)
+
+	data = unsafe_wrap(Array{py_data.info.T, length(py_data.dims)}, 
+						    Ptr{py_data.info.T}(py_data.data), reverse(py_data.dims))
+
+	squeezed_data = squeeze(data, (1,2))
+	println("Transposing data...")
+	@time transposed_squeezed_data = transpose(squeezed_data) 
+
+	return transposed_squeezed_data 
 end
 
 function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange, 
