@@ -21,11 +21,11 @@ const pyslice=pybuiltin(:slice)
 
 function cached(f)
 	cache=Dict()
-	function my_f(args...)
-		if !haskey(cache, args)
-			cache[args] = f(args...)
+	function my_f(args...; kwargs...)
+		if !haskey(cache, [args, kwargs])
+			cache[[args, kwargs]] = f(args...; kwargs...)
 		end
-		return cache[args]
+		return cache[[args, kwargs]]
 	end
 end
 
@@ -36,20 +36,24 @@ immutable CloudVolumeWrapper
 	val
 	function CloudVolumeWrapper(storage_string; mip=0,
 						bounded=true,
+                        autocrop=false,
 						fill_missing=false,
 						cache=false, 
                         cdn_cache=false,
                         progress=false,
 						info=nothing,
-                        provenance=nothing)
-		return new(CachedVolume(storage_string, mip, 
-						bounded, 
-						fill_missing,
-						cache,
-                        cdn_cache,
-                        progress,
-						info,
-                        provenance))
+                        provenance=nothing,
+                        compress=nothing)
+		return new(CachedVolume(storage_string, mip=mip, 
+						bounded=bounded,
+                        autocrop=autocrop,
+						fill_missing=fill_missing,
+						cache=cache,
+                        cdn_cache=cdn_cache,
+                        progress=progress,
+						info=info,
+                        provenance=provenance,
+                        compress=compress))
 	end
 end
 
