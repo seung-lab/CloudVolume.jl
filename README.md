@@ -33,7 +33,7 @@ delete!(s, "filename")
 
 Note that uploaded CloudVolume data must be chunk-aligned. For more details, see the [cloud-volume documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
 
-## Troubleshotting  
+## Troubleshooting  
 If you installed the CloudVolume Python package inside a virtualenv, you many need to rebuild `PyCall` to use that virtualenv.
 1. Activate the virtualenv you created.
 1. Open Julia.
