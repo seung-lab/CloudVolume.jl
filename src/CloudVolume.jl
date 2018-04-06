@@ -20,41 +20,41 @@ using PyCall
 const pyslice=pybuiltin(:slice)
 
 function cached(f)
-	cache=Dict()
-	function my_f(args...; kwargs...)
-		if !haskey(cache, [args, kwargs])
-			cache[[args, kwargs]] = f(args...; kwargs...)
-		end
-		return cache[[args, kwargs]]
-	end
+  cache=Dict()
+  function my_f(args...; kwargs...)
+    if !haskey(cache, [args, kwargs])
+      cache[[args, kwargs]] = f(args...; kwargs...)
+    end
+    return cache[[args, kwargs]]
+  end
 end
 
 CachedVolume = cached(cv.CloudVolume)
 CachedStorage = cached(cv.Storage)
 
 immutable CloudVolumeWrapper
-	val
-	function CloudVolumeWrapper(storage_string; mip=0,
-						bounded=true,
-                        autocrop=false,
-						fill_missing=false,
-						cache=false, 
-                        cdn_cache=false,
-                        progress=false,
-						info=nothing,
-                        provenance=nothing,
-                        compress=nothing)
-		return new(CachedVolume(storage_string, mip=mip, 
-						bounded=bounded,
-                        autocrop=autocrop,
-						fill_missing=fill_missing,
-						cache=cache,
-                        cdn_cache=cdn_cache,
-                        progress=progress,
-						info=info,
-                        provenance=provenance,
-                        compress=compress))
-	end
+  val
+  function CloudVolumeWrapper(storage_string; mip=0,
+            bounded=true,
+            autocrop=false,
+            fill_missing=false,
+            cache=false, 
+            cdn_cache=false,
+            progress=false,
+            info=nothing,
+            provenance=nothing,
+            compress=nothing)
+    return new(CachedVolume(storage_string, mip=mip, 
+            bounded=bounded,
+            autocrop=autocrop,
+            fill_missing=fill_missing,
+            cache=cache,
+            cdn_cache=cdn_cache,
+            progress=progress,
+            info=info,
+            provenance=provenance,
+            compress=compress))
+  end
 end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
@@ -67,21 +67,21 @@ end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange, 
                                         slicey::UnitRange, z::Int64)
-	slices = (pyslice(slicex.start,slicex.stop+1),
+  slices = (pyslice(slicex.start,slicex.stop+1),
              pyslice(slicey.start,slicey.stop+1),
              z)
 
-	println("Getting data references...")
-	@time py_data = pycall(x.val[:__getitem__], PyArray, slices)
+  println("Getting data references...")
+  @time py_data = pycall(x.val[:__getitem__], PyArray, slices)
 
-	data = unsafe_wrap(Array{py_data.info.T, length(py_data.dims)}, 
-						    Ptr{py_data.info.T}(py_data.data), reverse(py_data.dims))
+  data = unsafe_wrap(Array{py_data.info.T, length(py_data.dims)}, 
+                Ptr{py_data.info.T}(py_data.data), reverse(py_data.dims))
 
-	squeezed_data = squeeze(data, (1,2))
-	println("Transposing data...")
-	@time transposed_squeezed_data = transpose(squeezed_data) 
+  squeezed_data = squeeze(data, (1,2))
+  println("Transposing data...")
+  @time transposed_squeezed_data = transpose(squeezed_data) 
 
-	return transposed_squeezed_data 
+  return transposed_squeezed_data 
 end
 
 function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange, 
