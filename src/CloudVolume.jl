@@ -86,8 +86,13 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
     # a 4D Array with two dimensions set to '1'. That means we can squeeze()
     # and transpose(), rather than having to use 4D-permutedims()
     arr = pycall(x.val[:__getitem__], PyArray, slices)
-    arr = transpose(squeeze(
-            unsafe_wrap(Array, arr.data, reverse(arr.dims)), (1, 2)))
+
+    if arr.f_contig
+        arr = squeeze(copy(arr), (3, 4))
+    else
+        arr = transpose(squeeze(
+                unsafe_wrap(Array, arr.data, reverse(arr.dims)), (1, 2)))
+    end
     x.val[:unlink_shared_memory]()
     return arr
 end
