@@ -67,12 +67,35 @@ end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
                                         slicey::UnitRange, slicez::UnitRange)
-    arr = squeeze(get(x.val,
+    arr = pycall(x.val[:__getitem__], PyArray,
             (pyslice(slicex.start, slicex.stop + 1),
             pyslice(slicey.start, slicey.stop + 1),
-            pyslice(slicez.start, slicez.stop + 1))), 4)
-    x.val[:unlink_shared_memory]()
-    return arr
+            pyslice(slicez.start, slicez.stop + 1)))
+
+    RetType = x.val[:output_to_shared_memory] ? SharedArray{arr.info.T, 3} :
+            Array{arr.info.T, 3}
+
+    if arr.c_contig
+        arr.dims = arr.dims[2:4]
+        ret = RetType(reverse(arr.dims))
+        permutedims!(ret,
+                unsafe_wrap(Array, arr.data, reverse(arr.dims)), (3,2,1))
+    else
+        arr.dims = arr.dims[1:3]
+        if x.val[:output_to_shared_memory]
+            shmid = x.val[:shared_memory_id]
+            ret = RetType("/dev/shm/$(shmid)", arr.dims)
+        else
+            ret = copy(arr)
+        end
+    end
+
+    if x.val[:output_to_shared_memory]
+        x.val[:unlink_shared_memory]()
+        arr.o[:__del__]()
+    end
+    
+    return ret
 end
 
 function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
@@ -87,14 +110,29 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
     # and transpose(), rather than having to use 4D-permutedims()
     arr = pycall(x.val[:__getitem__], PyArray, slices)
 
-    if arr.f_contig
-        arr = squeeze(copy(arr), (3, 4))
+    RetType = x.val[:output_to_shared_memory] ? SharedArray{arr.info.T, 2} :
+            Array{arr.info.T, 2}
+
+    if arr.c_contig
+        arr.dims = arr.dims[3:4]
+        ret = RetType(reverse(arr.dims))
+        transpose!(ret, unsafe_wrap(Array, arr.data, reverse(arr.dims)))
     else
-        arr = transpose(squeeze(
-                unsafe_wrap(Array, arr.data, reverse(arr.dims)), (1, 2)))
+        arr.dims = arr.dims[1:2]
+        if x.val[:output_to_shared_memory]
+            shmid = x.val[:shared_memory_id]
+            ret = RetType("/dev/shm/$(shmid)", arr.dims)
+        else
+            ret = copy(arr)
+        end
     end
-    x.val[:unlink_shared_memory]()
-    return arr
+
+    if x.val[:output_to_shared_memory]
+        x.val[:unlink_shared_memory]()
+        arr.o[:__del__]()
+    end
+
+    return ret
 end
 
 function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange,
