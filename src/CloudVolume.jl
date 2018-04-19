@@ -12,7 +12,8 @@ export
     chunks,
     resolution,
     exists,
-    flush
+    flush,
+    upload_from_shared_memory
 
 
 using PyCall
@@ -143,27 +144,28 @@ function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange,
                             img)
 end
 
-function Base.upload_from_shared_memory(location::AbstractString, 
+function upload_from_shared_memory(x::CloudVolumeWrapper, location::String, 
     slicex::UnitRange, slicey::UnitRange, slicez::UnitRange,
-    cutout_slicex::UnitRange = nothing, cutout_slicey::UnitRange = nothing, cutout_slicez::UnitRange = nothing,
-    )
+    cutout_slicex::UnitRange = nothing, cutout_slicey::UnitRange = nothing, 
+                                            cutout_slicez::UnitRange = nothing)
 
-    slice = (
+    slices = (
         pyslice(slicex.start, slicex.stop + 1),
         pyslice(slicey.start, slicey.stop + 1),
         pyslice(slicez.start, slicez.stop + 1)
     )
 
-    cutout_slice = nothing
-    if cutout_slicex && cutout_slicey && cutout_slicez
-        cutout_slice = (
+    cutout_slices = nothing
+    if (cutout_slicex == nothing) & (cutout_slicey == nothing) & 
+                                                    (cutout_slicez == nothing);
+        cutout_slices = (
             pyslice(cutout_slicex.start, cutout_slicex.stop + 1),
             pyslice(cutout_slicey.start, cutout_slicey.stop + 1),
             pyslice(cutout_slicez.start, cutout_slicez.stop + 1)
         )
     end
 
-    x.val[:upload_from_shared_memory](location, slice, cutout_slice)
+    x.val[:upload_from_shared_memory](location, slices, cutout_slices)
 end
 
 function Base.size(x::CloudVolumeWrapper)
