@@ -143,6 +143,29 @@ function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange,
                             img)
 end
 
+function Base.upload_from_shared_memory(location::AbstractString, 
+    slicex::UnitRange, slicey::UnitRange, slicez::UnitRange,
+    cutout_slicex::UnitRange = nothing, cutout_slicey::UnitRange = nothing, cutout_slicez::UnitRange = nothing,
+    )
+
+    slice = (
+        pyslice(slicex.start, slicex.stop + 1),
+        pyslice(slicey.start, slicey.stop + 1),
+        pyslice(slicez.start, slicez.stop + 1)
+    )
+
+    cutout_slice = nothing
+    if cutout_slicex && cutout_slicey && cutout_slicez
+        cutout_slice = (
+            pyslice(cutout_slicex.start, cutout_slicex.stop + 1),
+            pyslice(cutout_slicey.start, cutout_slicey.stop + 1),
+            pyslice(cutout_slicez.start, cutout_slicez.stop + 1)
+        )
+    end
+
+    x.val[:upload_from_shared_memory](location, slice, cutout_slice)
+end
+
 function Base.size(x::CloudVolumeWrapper)
     return x.val[:shape]
 end
