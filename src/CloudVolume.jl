@@ -12,7 +12,8 @@ export
     chunks,
     resolution,
     exists,
-    flush
+    flush,
+    upload_from_shared_memory
 
 
 using PyCall
@@ -135,12 +136,51 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
     return ret
 end
 
-function Base.setindex!(x::CloudVolumeWrapper, img::Array, slicex::UnitRange,
-                                        slicey::UnitRange, slicez::UnitRange)
+function Base.setindex!(x::CloudVolumeWrapper, img::AbstractArray,
+        slicex::UnitRange, slicey::UnitRange, slicez::UnitRange)
     x.val[:__setitem__]((pyslice(slicex.start, slicex.stop + 1),
-                            pyslice(slicey.start, slicey.stop + 1),
-                            pyslice(slicez.start, slicez.stop + 1)),
-                            img)
+            pyslice(slicey.start, slicey.stop + 1),
+            pyslice(slicez.start, slicez.stop + 1)),
+            img)
+end
+
+function upload_from_shared_memory(x::CloudVolumeWrapper,
+        img::AbstractArray, slicex::UnitRange, slicey::UnitRange,
+        slicez::UnitRange, cutout_slicex::Union{UnitRange,Void} = nothing,
+        cutout_slicey::Union{UnitRange,Void} = nothing,
+        cutout_slicez::Union{UnitRange,Void} = nothing)
+
+    new_shm_seg_name = ""
+    if !(img isa SharedArray) || !isfile(img.segname)
+        warn("No shared memory file exists - need to create a new copy")
+        new_shm_seg_name = "/dev/shm/cvjl_$(lpad(string(getpid() % 10^6), 6, "0"))_$(randstring(15))"
+        new_img = SharedArray{eltype(img)}(new_shm_seg_name, size(img); mode="w+")
+        copy!(new_img, img)
+        img = new_img
+    end
+
+    slices = (
+        pyslice(slicex.start, slicex.stop + 1),
+        pyslice(slicey.start, slicey.stop + 1),
+        pyslice(slicez.start, slicez.stop + 1)
+    )
+
+    cutout_slices = nothing
+    if !(cutout_slicex isa Void && cutout_slicey isa Void &&
+            cutout_slicez isa Void)
+        cutout_slices = (
+            pyslice(cutout_slicex.start, cutout_slicex.stop + 1),
+            pyslice(cutout_slicey.start, cutout_slicey.stop + 1),
+            pyslice(cutout_slicez.start, cutout_slicez.stop + 1)
+        )
+    end
+
+    x.val[:upload_from_shared_memory](basename(img.segname), slices, cutout_slices)
+
+    if !isempty(new_shm_seg_name)
+        rm(new_shm_seg_name)
+        finalize(img)
+    end
 end
 
 function Base.size(x::CloudVolumeWrapper)
