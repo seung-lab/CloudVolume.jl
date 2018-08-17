@@ -12,13 +12,13 @@ Julia wrapper for cloud-volume from Python.
 Install cloud-volume, following the steps in its [documentation](https://github.com/seung-lab/cloud-volume#cloud-volume).
 
 Within Julia, clone this package,
-```
-Pkg.clone("https://github.com/seung-lab/CloudVolume.jl")
+```julia
+pkg> add https://github.com/seung-lab/CloudVolume.jl#v1.0
 ```
 
 ## Quickstart
 Note that indexing is inclusive, like Julia.
-```
+```julia
 using CloudVolume
 # CloudVolume object
 vol = CloudVolumeWrapper("<path to precomputed file directory>")

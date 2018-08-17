@@ -1,8 +1,9 @@
-"""
-Credit to @jonathanzung for an earlier Precomputed version
-"""
-
+__precompile__()
 module CloudVolume
+using PyCall
+using SharedArrays
+using LinearAlgebra  # transpose!
+using Random  # randstring
 
 export
     CloudVolumeWrapper,
@@ -15,10 +16,13 @@ export
     flush,
     upload_from_shared_memory
 
+import Base: getindex, setindex!, size, flush, delete!
 
-using PyCall
-@pyimport cloudvolume as cv
-const pyslice = pybuiltin(:slice)
+const pyslice = PyNULL()
+const cv = PyNULL()
+
+CachedVolume = nothing
+CachedStorage = nothing
 
 function cached(f)
     cache = Dict()
@@ -30,10 +34,15 @@ function cached(f)
     end
 end
 
-CachedVolume = cached(cv.CloudVolume)
-CachedStorage = cached(cv.Storage)
+function __init__()
+    global CachedVolume, CachedStorage
+    copy!(pyslice, pybuiltin(:slice))
+    copy!(cv, pyimport("cloudvolume"))
+    CachedVolume = cached(cv["CloudVolume"])
+    CachedStorage = cached(cv["Storage"])
+end
 
-immutable CloudVolumeWrapper
+struct CloudVolumeWrapper
     val::PyObject
     function CloudVolumeWrapper(storage_string::AbstractString;
             mip::Integer = 0,
@@ -43,9 +52,9 @@ immutable CloudVolumeWrapper
             cache::Union{Bool,AbstractString} = false,
             cdn_cache::Union{Bool,Integer,AbstractString} = false,
             progress::Bool = false,
-            info::Union{Dict,Void} = nothing,
-            provenance::Union{Dict,Void} = nothing,
-            compress::Union{Bool,AbstractString,Void} = nothing,
+            info::Union{Dict,Nothing} = nothing,
+            provenance::Union{Dict,Nothing} = nothing,
+            compress::Union{Bool,AbstractString,Nothing} = nothing,
             non_aligned_writes::Bool = false,
             parallel::Union{Bool,Integer} = false,
             output_to_shared_memory::Union{Bool,AbstractString} = false)
@@ -66,8 +75,8 @@ immutable CloudVolumeWrapper
     end
 end
 
-function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
-                                        slicey::UnitRange, slicez::UnitRange)
+function getindex(x::CloudVolumeWrapper, slicex::UnitRange,
+                  slicey::UnitRange, slicez::UnitRange)
     arr = pycall(x.val[:__getitem__], PyArray,
             (pyslice(slicex.start, slicex.stop + 1),
             pyslice(slicey.start, slicey.stop + 1),
@@ -99,8 +108,8 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
     return ret
 end
 
-function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
-                                        slicey::UnitRange, z::Integer)
+function getindex(x::CloudVolumeWrapper, slicex::UnitRange,
+                  slicey::UnitRange, z::Integer)
     slices = (pyslice(slicex.start, slicex.stop + 1),
             pyslice(slicey.start, slicey.stop + 1),
             z)
@@ -136,8 +145,8 @@ function Base.getindex(x::CloudVolumeWrapper, slicex::UnitRange,
     return ret
 end
 
-function Base.setindex!(x::CloudVolumeWrapper, img::AbstractArray,
-        slicex::UnitRange, slicey::UnitRange, slicez::UnitRange)
+function setindex!(x::CloudVolumeWrapper, img::AbstractArray,
+                   slicex::UnitRange, slicey::UnitRange, slicez::UnitRange)
     x.val[:__setitem__]((pyslice(slicex.start, slicex.stop + 1),
             pyslice(slicey.start, slicey.stop + 1),
             pyslice(slicez.start, slicez.stop + 1)),
@@ -146,13 +155,13 @@ end
 
 function upload_from_shared_memory(x::CloudVolumeWrapper,
         img::AbstractArray, slicex::UnitRange, slicey::UnitRange,
-        slicez::UnitRange, cutout_slicex::Union{UnitRange,Void} = nothing,
-        cutout_slicey::Union{UnitRange,Void} = nothing,
-        cutout_slicez::Union{UnitRange,Void} = nothing)
+        slicez::UnitRange, cutout_slicex::Union{UnitRange,Nothing} = nothing,
+        cutout_slicey::Union{UnitRange,Nothing} = nothing,
+        cutout_slicez::Union{UnitRange,Nothing} = nothing)
 
     new_shm_seg_name = ""
     if !(img isa SharedArray) || !isfile(img.segname)
-        warn("No shared memory file exists - need to create a new copy")
+        @warn("No shared memory file exists - need to create a new copy")
         new_shm_seg_name = "/dev/shm/cvjl_$(lpad(string(getpid() % 10^6), 6, "0"))_$(randstring(15))"
         new_img = SharedArray{eltype(img)}(new_shm_seg_name, size(img); mode="w+")
         copy!(new_img, img)
@@ -166,8 +175,8 @@ function upload_from_shared_memory(x::CloudVolumeWrapper,
     )
 
     cutout_slices = nothing
-    if !(cutout_slicex isa Void && cutout_slicey isa Void &&
-            cutout_slicez isa Void)
+    if !(cutout_slicex isa Nothing && cutout_slicey isa Nothing &&
+            cutout_slicez isa Nothing)
         cutout_slices = (
             pyslice(cutout_slicex.start, cutout_slicex.stop + 1),
             pyslice(cutout_slicey.start, cutout_slicey.stop + 1),
@@ -183,7 +192,7 @@ function upload_from_shared_memory(x::CloudVolumeWrapper,
     end
 end
 
-function Base.size(x::CloudVolumeWrapper)
+function size(x::CloudVolumeWrapper)
     return x.val[:shape]
 end
 
@@ -203,11 +212,11 @@ function resolution(x::CloudVolumeWrapper)
     return x.val[:resolution]
 end
 
-function Base.flush(x::CloudVolumeWrapper)
+function flush(x::CloudVolumeWrapper)
     return x.val[:flush_cache]()
 end
 
-function Base.info(x::CloudVolumeWrapper)
+function info(x::CloudVolumeWrapper)
     return x.val[:info]
 end
 
@@ -215,42 +224,41 @@ function provenance(x::CloudVolumeWrapper)
     return x.val[:provenance]
 end
 
-immutable StorageWrapper
-    val
-    function StorageWrapper(storage_string)
+struct StorageWrapper
+    val::PyObject
+    function StorageWrapper(storage_string::AbstractString)
         return new(CachedStorage(storage_string))
     end
 end
 
-function Base.getindex(x::StorageWrapper, filename::String)
+function getindex(x::StorageWrapper, filename::AbstractString)
     d = x.val[:get_file](filename)
-    return deserialize(IOBuffer(d))
+    return IOBuffer(d)
 end
 
-function Base.getindex(x::StorageWrapper, filenames::Array{String,1})
+function getindex(x::StorageWrapper, filenames::Vector{AbstractString})
     results = x.val[:get_files](filenames)
     empties = filter(x -> x["content"] == nothing, results)
     errors = filter(x -> x["error"] != nothing, results)
     filter!(x -> (x["error"] == nothing) & (x["content"] != nothing), results)
     for r in results
-        r["content"] = deserialize(IOBuffer(r["content"]))
+        r["content"] = IOBuffer(r["content"])
     end
     return results, empties, errors
 end
 
-function Base.setindex!(x::StorageWrapper, content, filename)
-    b = IOBuffer()
-    serialize(b, content)
-    x.val[:put_file](filename, pybytes(take!(b)))
+function setindex!(x::StorageWrapper, content::IOBuffer,
+                  filename::AbstractString)
+    x.val[:put_file](filename, pybytes(take!(content)))
     x.val[:wait]()
 end
 
-function Base.delete!(x::StorageWrapper, filename)
+function delete!(x::StorageWrapper, filename::AbstractString)
     x.val[:delete_file](filename)
     x.val[:wait]()
 end
 
-function exists(x::StorageWrapper, filename)
+function exists(x::StorageWrapper, filename::AbstractString)
     return x.val[:exists](filename)
 end
 
